@@ -76,14 +76,47 @@
 
         <a href="users.html" class="btn btn-secondary w-100 mt-3">⬅ Back</a>
     </div>
+    <!-- Edit Modal -->
+    <div class="modal fade" id="editProfileModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5>Edit Profile</h5><button class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="editAlert"></div>
 
+                    <div class="mb-3">
+                        <label>Name</label>
+                        <input id="editName" class="form-control">
+                    </div>
 
+                    <div class="mb-3">
+                        <label>Email</label>
+                        <input id="editEmail" class="form-control" readonly>
+                    </div>
+
+                    <div class="mb-3">
+                        <label>New Password (optional)</label>
+                        <input id="editPassword" type="password" class="form-control">
+                    </div>
+
+                    <div class="mb-3">
+                        <label>Confirm Password</label>
+                        <input id="editPasswordConfirm" type="password" class="form-control">
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button class="btn btn-success" onclick="updateProfile()">Save Changes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/script.js"></script>
     <script>
-        const API = "http://127.0.0.1:8000/api/";
-        const token = localStorage.getItem("auth_token");
-
-        if (!token) window.location.href = "login.html";
-
         async function addUser() {
             const nameInput = document.getElementById("name");
             const emailInput = document.getElementById("email");
@@ -123,20 +156,6 @@
 
                 alertBox.innerHTML = `<div class='alert alert-danger'>${msg}</div>`;
             }
-        }
-
-
-
-        // Logout function
-        async function logout() {
-            try {
-                await axios.post(`${API}logout`, {}, {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
-            } catch { }
-
-            localStorage.removeItem("auth_token");
-            window.location.href = "login.html";
         }
     </script>
 
