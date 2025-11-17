@@ -117,7 +117,7 @@
 
         async function fetchUser() {
             try {
-                const res = await axios.get(API + "auth/user", { headers: { Authorization: `Bearer ${token}` } });
+                const res = await axios.get(API + "user", { headers: { Authorization: `Bearer ${token}` } });
                 user = res.data.data;
 
                 document.getElementById("userName").textContent = user.name;
@@ -169,7 +169,7 @@
         function showEdit(msg, type) { editAlert.innerHTML = `<div class="alert alert-${type}">${msg}</div>`; }
 
         async function logout() {
-            try { await axios.post(API + "auth/logout", {}, { headers: { Authorization: `Bearer ${token}` } }); } catch { }
+            try { await axios.post(API + "logout", {}, { headers: { Authorization: `Bearer ${token}` } }); } catch { }
             localStorage.removeItem("auth_token");
             window.location.href = "login.html";
         }

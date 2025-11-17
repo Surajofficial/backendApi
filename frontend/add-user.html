@@ -130,7 +130,7 @@
         // Logout function
         async function logout() {
             try {
-                await axios.post(`${API}auth/logout`, {}, {
+                await axios.post(`${API}logout`, {}, {
                     headers: { Authorization: `Bearer ${token}` }
                 });
             } catch { }

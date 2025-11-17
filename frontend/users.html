@@ -322,7 +322,7 @@
         // Logout
         async function logout() {
             try {
-                await axios.post(`${API}auth/logout`, {}, { headers: { Authorization: `Bearer ${token}` } });
+                await axios.post(`${API}logout`, {}, { headers: { Authorization: `Bearer ${token}` } });
             } catch { }
 
             localStorage.removeItem("auth_token");
