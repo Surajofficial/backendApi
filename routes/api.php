@@ -21,7 +21,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
 // Admin routes
 Route::middleware(['auth:sanctum', 'can:manage-users'])->prefix('admin')->group(function () {
-    Route::apiResource('users', AdminUserController::class);
     Route::get('users/search', [AdminUserController::class, 'search']);
+    Route::apiResource('users', AdminUserController::class);
+
 });
 

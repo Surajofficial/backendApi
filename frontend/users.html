@@ -5,7 +5,13 @@
     <meta charset="UTF-8">
     <title>User Management</title>
 
+    <!-- Bootstrap -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+    <!-- Axios -->
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 
     <style>
@@ -15,7 +21,7 @@
 
         .action-btn {
             cursor: pointer;
-            margin-right: 12px;
+            margin-right: 10px;
             font-size: 18px;
         }
 
@@ -26,6 +32,7 @@
 </head>
 
 <body>
+
     <!-- NAVBAR -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
         <div class="container-fluid">
@@ -38,12 +45,10 @@
                 <span class="text-white fw-semibold" id="navUserName"></span>
 
                 <div class="dropdown">
-                    <button class="btn btn-light btn-sm dropdown-toggle" data-bs-toggle="dropdown">
-                        Account
-                    </button>
+                    <button class="btn btn-light btn-sm dropdown-toggle" data-bs-toggle="dropdown">Account</button>
                     <ul class="dropdown-menu dropdown-menu-end">
                         <li><button class="dropdown-item" onclick="openEditModal()">Edit Profile</button></li>
-                        <li><a class="dropdown-item text-danger" onclick="logout()">Logout</a></li>
+                        <li><button class="dropdown-item text-danger" onclick="logout()">Logout</button></li>
                     </ul>
                 </div>
             </div>
@@ -53,13 +58,13 @@
 
     <div class="container mt-4">
 
-        <h3>User Management</h3>
+        <h3 class="fw-bold">User Management</h3>
         <hr>
 
-        <!--  SEARCH + FILTERS -->
+        <!-- SEARCH + FILTER -->
         <div class="row mb-3">
             <div class="col-md-6">
-                <input id="searchBox" class="form-control" placeholder="Search by name or email...">
+                <input id="searchBox" class="form-control" placeholder="Search name or email...">
             </div>
             <div class="col-md-3">
                 <select id="roleFilter" class="form-control">
@@ -92,29 +97,35 @@
 
         <!-- Pagination -->
         <div class="d-flex justify-content-between mt-3">
-            <button class="btn btn-outline-secondary btn-sm" id="prevBtn" onclick="loadUsers(currentPage - 1)">⬅
-                Prev</button>
+            <button class="btn btn-outline-secondary btn-sm" id="prevBtn" onclick="loadUsers(currentPage - 1)">
+                <i class="fa-solid fa-chevron-left"></i>
+                Prev
+            </button>
+
             <strong id="pageInfo"></strong>
-            <button class="btn btn-outline-secondary btn-sm" id="nextBtn" onclick="loadUsers(currentPage + 1)">Next
-                ➡</button>
+
+            <button class="btn btn-outline-secondary btn-sm" id="nextBtn" onclick="loadUsers(currentPage + 1)">
+                Next <i class="fa-solid fa-chevron-right"></i>
+            </button>
         </div>
+
     </div>
 
 
-    <!-- USER MANAGEMENT MODAL (FIXED IDs) -->
+
+    <!-- USER MODAL -->
     <div class="modal fade" id="manageUserModal">
         <div class="modal-dialog">
             <div class="modal-content">
 
                 <div class="modal-header">
-                    <h5 id="manageModalTitle">User Details</h5>
+                    <h5 id="manageModalTitle">User</h5>
                     <button class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
 
                 <div class="modal-body">
 
                     <div id="manageModalAlert"></div>
-
                     <input type="hidden" id="manageUserId">
 
                     <div class="mb-3">
@@ -152,7 +163,7 @@
         </div>
     </div>
 
-    <!-- Edit Modal -->
+    <!-- PROFILE MODAL -->
     <div class="modal fade" id="editProfileModal" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
@@ -191,45 +202,74 @@
         </div>
     </div>
 
-    <!-- Profile Modal stays untouched -->
     <script src="js/script.js"></script>
-
 
     <script>
         let modalManage;
+        let debounceTimer;
+        let currentPage = 1;
+        let lastPage = 1;
+
         document.addEventListener("DOMContentLoaded", () => {
             modalManage = new bootstrap.Modal(document.getElementById("manageUserModal"));
             loadUsers();
-        });
 
+            searchBox.addEventListener("input", () => {
+                clearTimeout(debounceTimer);
+                debounceTimer = setTimeout(() => loadUsers(1), 400);
+            });
+
+            roleFilter.addEventListener("change", () => loadUsers(1));
+        });
         async function loadUsers(page = 1) {
+            let query = searchBox.value.trim();
+            let role = roleFilter.value;
+
             let url = `${API}admin/users?page=${page}`;
 
-            if (searchBox.value.trim() || roleFilter.value)
-                url = `${API}admin/users/search?q=${searchBox.value}&role=${roleFilter.value}&page=${page}`;
+            if (query || role) {
+                url = `${API}admin/users/search?q=${query}&role=${role}&page=${page}`;
+            }
 
-            const res = await axios.get(url, { headers: { Authorization: `Bearer ${token}` } });
+            try {
+                const res = await axios.get(url, { headers: { Authorization: `Bearer ${token}` } });
 
-            const pagination = res.data.meta ?? res.data;
-            currentPage = pagination.current_page;
-            lastPage = pagination.last_page;
+                const pagination = res.data.meta ?? res.data;
+                currentPage = pagination.current_page;
+                lastPage = pagination.last_page;
 
-            pageInfo.textContent = `Page ${currentPage} of ${lastPage}`;
-            prevBtn.disabled = currentPage === 1;
-            nextBtn.disabled = currentPage === lastPage;
+                pageInfo.textContent = `Page ${currentPage} of ${lastPage}`;
+                prevBtn.disabled = currentPage === 1;
+                nextBtn.disabled = currentPage === lastPage;
 
-            userRows.innerHTML = res.data.data.map((u, i) => `
-                <tr>
-                    <td>${(currentPage - 1) * pagination.per_page + i + 1}</td>
-                    <td>${u.name}</td>
-                    <td>${u.email}</td>
-                    <td><span class="badge bg-${u.role === 'admin' ? 'danger' : 'secondary'}">${u.role}</span></td>
-                    <td>
-                        <span class="text-info action-btn" onclick="viewUser(${u.id})">👁</span>
-                        <span class="text-primary action-btn" onclick="editUser(${u.id})">✏</span>
-                        <span class="text-danger action-btn" onclick="deleteUser(${u.id})">🗑</span>
-                    </td>
-                </tr>`).join('');
+                let rows = "";
+                res.data.data.forEach((u, i) => {
+                    rows += `
+            <tr>
+                <td>${(currentPage - 1) * pagination.per_page + i + 1}</td>
+                <td>${u.name}</td>
+                <td>${u.email}</td>
+                <td><span class="badge bg-${u.role === 'admin' ? 'danger' : 'secondary'}">${u.role}</span></td>
+                <td>
+                            <i class="fa-solid fa-eye text-info action-btn" onclick="viewUser(${u.id})"></i>
+                            <i class="fa-solid fa-pen-to-square text-primary action-btn" onclick="editUser(${u.id})"></i>
+                            <i class="fa-solid fa-trash text-danger action-btn" onclick="deleteUser(${u.id})"></i>
+                        </td>
+            </tr>`;
+                });
+
+                userRows.innerHTML = rows;
+
+            } catch {
+                alertBox.innerHTML = `<div class="alert alert-danger">Access denied ❌</div>`;
+            }
+        }
+
+
+        function resetFilters() {
+            searchBox.value = "";
+            roleFilter.value = "";
+            loadUsers(1);
         }
 
         async function viewUser(id) {
@@ -248,7 +288,7 @@
             managePassword.readOnly = true;
 
             manageSaveBtn.style.display = "none";
-            manageModalTitle.textContent = `User Details`;
+            manageModalTitle.textContent = "User Details";
             manageModalAlert.innerHTML = "";
 
             modalManage.show();
@@ -262,7 +302,6 @@
             manageName.value = user.name;
             manageEmail.value = user.email;
             manageRole.value = user.role;
-            managePassword.value = "";
 
             manageName.readOnly = false;
             manageEmail.readOnly = false;
@@ -270,7 +309,7 @@
             managePassword.readOnly = false;
 
             manageSaveBtn.style.display = "inline-block";
-            manageModalTitle.textContent = `Edit User`;
+            manageModalTitle.textContent = "Edit User";
             manageModalAlert.innerHTML = "";
 
             modalManage.show();
@@ -278,22 +317,24 @@
 
         async function updateUser() {
             const id = manageUserId.value;
-            const payload = {
+
+            let payload = {
                 name: manageName.value,
                 email: manageEmail.value,
                 role: manageRole.value
             };
 
-            if (managePassword.value.trim()) payload.password = managePassword.value.trim();
+            if (managePassword.value.trim())
+                payload.password = managePassword.value.trim();
 
             await axios.put(`${API}admin/users/${id}`, payload, { headers: { Authorization: `Bearer ${token}` } });
 
-            manageModalAlert.innerHTML = `<div class="alert alert-success">Updated ✔</div>`;
+            manageModalAlert.innerHTML = `<div class="alert alert-success">Updated Successfully</div>`;
             setTimeout(() => { modalManage.hide(); loadUsers(currentPage); }, 800);
         }
 
         async function deleteUser(id) {
-            if (!confirm("Confirm Delete? 🚨")) return;
+            if (!confirm("Delete user?")) return;
             await axios.delete(`${API}admin/users/${id}`, { headers: { Authorization: `Bearer ${token}` } });
             loadUsers(currentPage);
         }
