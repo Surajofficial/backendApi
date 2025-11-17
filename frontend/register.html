@@ -27,7 +27,7 @@
 <body>
 
     <div class="register-card">
-        <h4 class="text-center mb-3">📝 Create an Account</h4>
+        <h4 class="text-center mb-3">Create an Account</h4>
 
         <div id="alertBox"></div>
 
@@ -74,7 +74,7 @@
         </div>
 
         <div class="text-center mt-2">
-            <button class="btn btn-link" onclick="loadCaptcha()">🔄 Refresh Captcha</button>
+            <button class="btn btn-link" onclick="loadCaptcha()">Refresh Captcha</button>
         </div>
     </div>
 
@@ -93,7 +93,7 @@
                 document.getElementById("captchaText").textContent = response.data.a + " + " + response.data.b + " = ?";
 
             } catch (error) {
-                showAlert("Captcha failed to load ❌", "danger");
+                showAlert("Captcha failed to load", "danger");
             }
         }
 
@@ -116,14 +116,14 @@
                     headers: { "Accept": "application/json", "Content-Type": "application/json" }
                 });
 
-                showAlert("Registration Successful 🎉 Redirecting to login...", "success");
+                showAlert("Registration Successful Redirecting to login...", "success");
 
                 setTimeout(() => {
                     window.location.href = "login.html";
                 }, 1200);
 
             } catch (error) {
-                let msg = "Registration failed ❌";
+                let msg = "Registration failed";
 
                 if (error.response?.data?.errors) {
                     msg = Object.values(error.response.data.errors).join("<br>");

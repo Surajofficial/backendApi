@@ -2,7 +2,7 @@
 const API = "http://127.0.0.1:8000/api/";
 const token = localStorage.getItem("auth_token");
 
-// if (!token) window.location.href = "login.html";
+if (!token) window.location.href = "login.html";
 
 let user = null;
 let modal;
@@ -14,20 +14,23 @@ async function fetchUser() {
     try {
         const res = await axios.get(API + "user", { headers: { Authorization: `Bearer ${token}` } });
         user = res.data.data;
+        if (typeof page !== "undefined") {
+            console.log('test');
+            document.getElementById("userName").textContent = user.name;
+            document.getElementById("userEmail").textContent = user.email;
+            document.getElementById("userRole").textContent = user.role.toUpperCase();
+            document.getElementById("navUserName").textContent = user.name;
+            document.getElementById("userMenu").style.display = "flex";
 
-        document.getElementById("userName").textContent = user.name;
-        document.getElementById("userEmail").textContent = user.email;
-        document.getElementById("userRole").textContent = user.role.toUpperCase();
-        document.getElementById("navUserName").textContent = user.name;
-        document.getElementById("userMenu").style.display = "flex";
+            if (user.role === "admin") {
+                document.getElementById("adminNav").classList.remove("d-none");
+                document.getElementById("userRole").classList.replace("bg-secondary", "bg-danger");
+            }
 
-        if (user.role === "admin") {
-            document.getElementById("adminNav").classList.remove("d-none");
-            document.getElementById("userRole").classList.replace("bg-secondary", "bg-danger");
         }
 
     } catch {
-        // logout();
+        logout();
     }
 }
 
@@ -55,7 +58,7 @@ async function updateProfile() {
 
     try {
         await axios.put(API + "user/profile", payload, { headers: { Authorization: `Bearer ${token}` } });
-        showEdit("Updated Successfully 🎉", "success");
+        showEdit("Updated Successfully ", "success");
         setTimeout(() => { modal.hide(); fetchUser(); }, 1000);
     } catch (err) {
         showEdit("Error updating profile", "danger");

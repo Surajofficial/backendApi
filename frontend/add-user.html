@@ -43,7 +43,7 @@
 
     <!-- PAGE CONTENT -->
     <div class="container mt-5" style="max-width:600px;">
-        <h3>➕ Add New User</h3>
+        <h3>Add New User</h3>
         <hr>
 
         <div id="alertBox"></div>
@@ -131,7 +131,7 @@
             };
 
             if (!payload.name || !payload.email || !payload.password) {
-                alertBox.innerHTML = `<div class="alert alert-danger">All fields are required ⚠️</div>`;
+                alertBox.innerHTML = `<div class="alert alert-danger">All fields are required </div>`;
                 return;
             }
 
@@ -140,15 +140,14 @@
                     headers: { Authorization: `Bearer ${token}`, Accept: "application/json" }
                 });
 
-                alertBox.innerHTML = `<div class='alert alert-success'>🎉 User Created Successfully</div>`;
-
+                alertBox.innerHTML = `<div class='alert alert-success'> User Created Successfully</div>`;
                 // Reset form
                 nameInput.value = "";
                 emailInput.value = "";
                 passwordInput.value = "";
 
             } catch (error) {
-                let msg = "Something went wrong ❌";
+                let msg = "Something went wrong";
 
                 if (error.response?.data?.errors) {
                     msg = Object.values(error.response.data.errors).join("<br>");
