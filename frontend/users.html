@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>User Management</title>
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+
+    <style>
+        body {
+            background-color: #f3f6fb;
+        }
+
+        .action-btn {
+            cursor: pointer;
+            margin-right: 12px;
+            font-size: 18px;
+        }
+
+        .action-btn:hover {
+            opacity: 0.6;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- NAVBAR -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container-fluid">
+            <a class="navbar-brand fw-bold" href="dashboard.html">User Portal</a>
+
+            <div class="d-flex gap-3">
+                <a href="add-user.html" class="btn btn-warning btn-sm">Add User</a>
+                <a href="index.html" class="btn btn-light btn-sm">Dashboard</a>
+                <!-- User Menu -->
+                <span class="text-white fw-semibold" id="navUserName"></span>
+                <div class="dropdown">
+                    <button class="btn btn-light btn-sm dropdown-toggle" data-bs-toggle="dropdown">
+                        Account
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><button class="dropdown-item" onclick="openEditModal()">Edit Profile</button></li>
+                        <li><a class="dropdown-item text-danger" onclick="logout()">Logout</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+
+    <div class="container mt-4">
+
+        <h3>👥 User Management</h3>
+        <hr>
+
+        <!-- 🔍 SEARCH + FILTERS -->
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <input id="searchBox" class="form-control" placeholder="Search by name or email...">
+            </div>
+            <div class="col-md-3">
+                <select id="roleFilter" class="form-control">
+                    <option value="">Filter by Role</option>
+                    <option value="user">User</option>
+                    <option value="manager">Manager</option>
+                    <option value="admin">Admin</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <button class="btn btn-secondary w-100" onclick="resetFilters()">Reset</button>
+            </div>
+        </div>
+
+        <div id="alertBox"></div>
+
+        <!-- TABLE -->
+        <table class="table table-bordered table-hover">
+            <thead class="table-dark">
+                <tr>
+                    <th>#</th>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Role</th>
+                    <th width="160px">Actions</th>
+                </tr>
+            </thead>
+            <tbody id="userRows"></tbody>
+        </table>
+
+        <!-- Pagination -->
+        <div class="d-flex justify-content-between align-items-center mt-3">
+            <button class="btn btn-outline-secondary btn-sm" id="prevBtn" onclick="loadUsers(currentPage - 1)">⬅
+                Prev</button>
+            <strong id="pageInfo"></strong>
+            <button class="btn btn-outline-secondary btn-sm" id="nextBtn" onclick="loadUsers(currentPage + 1)">Next
+                ➡</button>
+        </div>
+    </div>
+
+
+
+    <!-- USER MODAL (VIEW + EDIT) -->
+    <div class="modal fade" id="userModal">
+        <div class="modal-dialog">
+            <div class="modal-content">
+
+                <div class="modal-header">
+                    <h5 id="modalTitle">User Details</h5>
+                    <button class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+
+                <div class="modal-body">
+
+                    <div id="modalAlert"></div>
+
+                    <input type="hidden" id="userId">
+
+                    <div class="mb-3">
+                        <label>Name</label>
+                        <input id="editName" class="form-control">
+                    </div>
+
+                    <div class="mb-3">
+                        <label>Email</label>
+                        <input id="editEmail" class="form-control">
+                    </div>
+
+                    <div class="mb-3">
+                        <label>Role</label>
+                        <select id="editRole" class="form-control">
+                            <option value="user">User</option>
+                            <option value="manager">Manager</option>
+                            <option value="admin">Admin</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label>Change Password (optional)</label>
+                        <input id="editPassword" type="password" class="form-control">
+                    </div>
+
+                </div>
+
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button class="btn btn-success" id="saveBtn" onclick="updateUser()">Save</button>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        const API = "http://127.0.0.1:8000/api/";
+        const token = localStorage.getItem("auth_token");
+
+        if (!token) window.location.href = "login.html";
+
+        let currentPage = 1, lastPage = 1;
+        let searchTimeout;
+        let modal;
+
+
+        // Load Users (with search & role filter)
+        async function loadUsers(page = 1) {
+            let query = searchBox.value.trim();
+            let role = roleFilter.value;
+
+            let url = `${API}admin/users?page=${page}`;
+
+            if (query || role) {
+                url = `${API}admin/users/search?q=${query}&role=${role}&page=${page}`;
+            }
+
+            try {
+                const res = await axios.get(url, { headers: { Authorization: `Bearer ${token}` } });
+
+                const pagination = res.data.meta ?? res.data;
+                currentPage = pagination.current_page;
+                lastPage = pagination.last_page;
+
+                pageInfo.textContent = `Page ${currentPage} of ${lastPage}`;
+                prevBtn.disabled = currentPage === 1;
+                nextBtn.disabled = currentPage === lastPage;
+
+                let rows = "";
+                res.data.data.forEach((u, i) => {
+                    rows += `
+            <tr>
+                <td>${(currentPage - 1) * pagination.per_page + i + 1}</td>
+                <td>${u.name}</td>
+                <td>${u.email}</td>
+                <td><span class="badge bg-${u.role === 'admin' ? 'danger' : 'secondary'}">${u.role}</span></td>
+                <td>
+                    <span class="text-info action-btn" onclick="viewUser(${u.id})">👁</span>
+                    <span class="text-primary action-btn" onclick="editUser(${u.id})">✏</span>
+                    <span class="text-danger action-btn" onclick="deleteUser(${u.id})">🗑</span>
+                </td>
+            </tr>`;
+                });
+
+                userRows.innerHTML = rows;
+
+            } catch {
+                alertBox.innerHTML = `<div class="alert alert-danger">Access denied ❌</div>`;
+            }
+        }
+
+
+        // SEARCH debounce handler
+        searchBox.addEventListener("input", () => {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => loadUsers(1), 300);
+        });
+
+        roleFilter.addEventListener("change", () => loadUsers(1));
+
+        function resetFilters() {
+            searchBox.value = "";
+            roleFilter.value = "";
+            loadUsers(1);
+        }
+
+
+        // VIEW USER MODE
+        async function viewUser(id) {
+            const res = await axios.get(`${API}admin/users/${id}`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            modalAlert.innerHTML = ``;
+            const user = res.data.data ?? res.data;
+
+            userId.value = user.id;
+            editName.value = user.name;
+            editEmail.value = user.email;
+            editRole.value = user.role;
+            editPassword.value = "";
+
+            editName.setAttribute("readonly", true);
+            editEmail.setAttribute("readonly", true);
+            editRole.setAttribute("disabled", true);
+            editPassword.setAttribute("readonly", true);
+
+            saveBtn.style.display = "none";
+            modalTitle.textContent = `User Details: ${user.name}`;
+
+            modal.show();
+        }
+
+
+        // EDIT MODE
+        async function editUser(id) {
+            const res = await axios.get(`${API}admin/users/${id}`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            modalAlert.innerHTML = ``;
+            const user = res.data.data ?? res.data;
+
+            userId.value = user.id;
+            editName.value = user.name;
+            editEmail.value = user.email;
+            editRole.value = user.role;
+            editPassword.value = "";
+
+            editName.removeAttribute("readonly");
+            editEmail.removeAttribute("readonly");
+            editRole.removeAttribute("disabled");
+            editPassword.removeAttribute("readonly");
+
+            saveBtn.style.display = "inline-block";
+            modalTitle.textContent = `Edit User: ${user.name}`;
+
+            modal.show();
+        }
+
+
+        // UPDATE USER
+        async function updateUser() {
+            const id = userId.value;
+
+            const payload = {
+                name: editName.value,
+                email: editEmail.value,
+                role: editRole.value
+            };
+
+            if (editPassword.value.trim().length > 0) {
+                payload.password = editPassword.value.trim();
+            }
+
+            try {
+                await axios.put(`${API}admin/users/${id}`, payload, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+
+                modalAlert.innerHTML = `<div class="alert alert-success">Updated ✔</div>`;
+                setTimeout(() => { modal.hide(); loadUsers(currentPage); }, 800);
+
+            } catch (err) {
+                modalAlert.innerHTML = `<div class="alert alert-danger">Update failed ❌</div>`;
+            }
+        }
+
+
+
+        // DELETE USER
+        async function deleteUser(id) {
+            if (!confirm("Are you sure you want to delete this user? 🚨")) return;
+
+            await axios.delete(`${API}admin/users/${id}`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+
+            loadUsers(currentPage);
+        }
+
+
+        // Logout
+        async function logout() {
+            try {
+                await axios.post(`${API}auth/logout`, {}, { headers: { Authorization: `Bearer ${token}` } });
+            } catch { }
+
+            localStorage.removeItem("auth_token");
+            window.location.href = "login.html";
+        }
+
+
+
+        document.addEventListener("DOMContentLoaded", () => {
+            modal = new bootstrap.Modal(document.getElementById("userModal"));
+            loadUsers();
+        });
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+
+</html>

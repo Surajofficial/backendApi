@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Register | Secure Auth</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+
+    <style>
+        body {
+            background: #f3f6fb;
+        }
+
+        .register-card {
+            max-width: 450px;
+            margin: 70px auto;
+            padding: 25px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="register-card">
+        <h4 class="text-center mb-3">📝 Create an Account</h4>
+
+        <div id="alertBox"></div>
+
+        <form id="registerForm">
+
+            <div class="mb-3">
+                <label>Full Name</label>
+                <input type="text" id="name" class="form-control" required placeholder="Enter your full name">
+            </div>
+
+            <div class="mb-3">
+                <label>Email Address</label>
+                <input type="email" id="email" class="form-control" required placeholder="example@mail.com">
+            </div>
+
+            <div class="mb-3">
+                <label>Password</label>
+                <input type="password" id="password" class="form-control" required placeholder="Minimum 6 characters">
+            </div>
+
+            <div class="mb-3">
+                <label>Confirm Password</label>
+                <input type="password" id="password_confirmation" class="form-control" required
+                    placeholder="Re-enter password">
+            </div>
+
+            <!-- CAPTCHA -->
+            <div class="mb-3">
+                <label>Captcha Validation</label>
+                <div class="input-group">
+                    <span id="captchaText" class="input-group-text fw-bold">...</span>
+                    <input type="number" id="captcha_answer" class="form-control" placeholder="Answer">
+                </div>
+            </div>
+
+            <input type="hidden" id="captcha_key">
+
+            <button type="submit" class="btn btn-success w-100">Register</button>
+        </form>
+
+        <div class="text-center mt-3">
+            Already have an account?
+            <a href="login.html">Login</a>
+        </div>
+
+        <div class="text-center mt-2">
+            <button class="btn btn-link" onclick="loadCaptcha()">🔄 Refresh Captcha</button>
+        </div>
+    </div>
+
+
+    <script>
+        const API_BASE_URL = "http://127.0.0.1:8000/api/auth";
+
+        // Load Captcha
+        async function loadCaptcha() {
+            try {
+                const response = await axios.get(`${API_BASE_URL}/captcha`, {
+                    headers: { "Accept": "application/json" }
+                });
+
+                document.getElementById("captcha_key").value = response.data.key;
+                document.getElementById("captchaText").textContent = response.data.a + " + " + response.data.b + " = ?";
+
+            } catch (error) {
+                showAlert("Captcha failed to load ❌", "danger");
+            }
+        }
+
+        // Submit Register
+        document.getElementById("registerForm").addEventListener("submit", async function (event) {
+            event.preventDefault();
+
+            const payload = {
+                name: document.getElementById("name").value.trim(),
+                email: document.getElementById("email").value.trim(),
+                password: document.getElementById("password").value.trim(),
+                password_confirmation: document.getElementById("password_confirmation").value.trim(),
+                role: "user",  // Fixed role
+                captcha_key: document.getElementById("captcha_key").value,
+                captcha_answer: document.getElementById("captcha_answer").value,
+            };
+
+            try {
+                await axios.post(`${API_BASE_URL}/register`, payload, {
+                    headers: { "Accept": "application/json", "Content-Type": "application/json" }
+                });
+
+                showAlert("Registration Successful 🎉 Redirecting to login...", "success");
+
+                setTimeout(() => {
+                    window.location.href = "login.html";
+                }, 1200);
+
+            } catch (error) {
+                let msg = "Registration failed ❌";
+
+                if (error.response?.data?.errors) {
+                    msg = Object.values(error.response.data.errors).join("<br>");
+                } else if (error.response?.data?.message) {
+                    msg = error.response.data.message;
+                }
+
+                showAlert(msg, "danger");
+                loadCaptcha(); // refresh after failed attempt
+            }
+        });
+
+        function showAlert(message, type) {
+            document.getElementById("alertBox").innerHTML =
+                `<div class="alert alert-${type} py-2">${message}</div>`;
+        }
+
+        loadCaptcha();
+    </script>
+
+</body>
+
+</html>

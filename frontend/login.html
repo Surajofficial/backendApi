@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login | Secure Auth</title>
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Axios -->
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+
+    <style>
+        body {
+            background: #f2f4f8;
+        }
+
+        .login-card {
+            max-width: 400px;
+            margin: 90px auto;
+            padding: 25px;
+            border-radius: 10px;
+            background: #fff;
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="login-card">
+        <h4 class="text-center mb-3">🔐 Login</h4>
+
+        <div id="alertBox"></div>
+
+        <form id="loginForm">
+
+            <div class="mb-3">
+                <label>Email</label>
+                <input type="email" id="email" class="form-control" placeholder="Enter your registered email" required>
+            </div>
+
+            <div class="mb-3">
+                <label>Password</label>
+                <input type="password" id="password" class="form-control" placeholder="Enter your password" required>
+            </div>
+
+            <!-- CAPTCHA Row -->
+            <div class="mb-3">
+                <label>Captcha</label>
+                <div class="input-group">
+                    <span id="captchaText" class="input-group-text fw-bold">...</span>
+                    <input type="number" id="captcha_answer" class="form-control" placeholder="Enter answer here"
+                        required>
+                </div>
+            </div>
+
+            <!-- Hidden Captcha Key -->
+            <input type="hidden" id="captcha_key">
+
+            <button type="submit" class="btn btn-primary w-100">Login</button>
+        </form>
+
+        <div class="text-center mt-3">
+            Not registered?
+            <a href="register.html">Create an Account</a>
+        </div>
+
+        <div class="text-center mt-3">
+            <button class="btn btn-link" onclick="loadCaptcha()">🔄 Refresh Captcha</button>
+        </div>
+    </div>
+
+
+    <script>
+        const API_BASE_URL = "http://127.0.0.1:8000/api/auth";
+
+        // ---- Fetch Captcha ----
+        async function loadCaptcha() {
+            try {
+                const response = await axios.get(`${API_BASE_URL}/captcha`, {
+                    headers: { "Accept": "application/json" }
+                });
+
+                document.getElementById("captcha_key").value = response.data.key;
+                document.getElementById("captchaText").textContent =
+                    `${response.data.a} + ${response.data.b} = ?`;
+
+            } catch (err) {
+                showAlert("Failed to load captcha!", "danger");
+            }
+        }
+
+        // ---- Submit Login ----
+        document.getElementById("loginForm").addEventListener("submit", async function (event) {
+            event.preventDefault();
+
+            const loginData = {
+                email: email.value.trim(),
+                password: password.value.trim(),
+                captcha_key: captcha_key.value,
+                captcha_answer: captcha_answer.value.trim(),
+            };
+
+            try {
+                const response = await axios.post(`${API_BASE_URL}/login`, loginData, {
+                    headers: { "Accept": "application/json", "Content-Type": "application/json" }
+                });
+
+                showAlert("Login Successful 🎉 Redirecting...", "success");
+
+                localStorage.setItem("auth_token", response.data.token);
+
+                setTimeout(() => {
+                    window.location.href = "index.html";
+                }, 1200);
+
+            } catch (error) {
+                const msg = error.response?.data?.message ||
+                    Object.values(error.response?.data?.errors || { error: "Login failed!" }).join("<br>");
+
+                showAlert(msg, "danger");
+                loadCaptcha();
+            }
+        });
+
+        // ---- Reusable Alert ----
+        function showAlert(message, type) {
+            alertBox.innerHTML =
+                `<div class="alert alert-${type} py-2 text-center">${message}</div>`;
+        }
+
+        loadCaptcha();
+    </script>
+
+</body>
+
+</html>
